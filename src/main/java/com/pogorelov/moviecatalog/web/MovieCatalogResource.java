@@ -1,5 +1,6 @@
 package com.pogorelov.moviecatalog.web;
 
+import com.pogorelov.moviecatalog.client.MovieInfoClient;
 import com.pogorelov.moviecatalog.domain.CatalogItem;
 import com.pogorelov.moviecatalog.domain.Movie;
 import com.pogorelov.moviecatalog.domain.Rating;
@@ -24,15 +25,19 @@ public class MovieCatalogResource {
     @Autowired
     private RestTemplate restTemplate;
 
+    @Autowired
+    private MovieInfoClient movieInfoClient;
+
     @GetMapping("/{userId}")
     public List<CatalogItem> getCatalogForUser(@PathVariable String userId) {
 
-        RatingVM userRatings = restTemplate.getForObject("http://localhost:8082/ratings/users/" + userId, RatingVM.class);
+        RatingVM userRatings = restTemplate.getForObject("http://rating-data-service/ratings/users/" + userId, RatingVM.class);
         List<Rating> ratings = userRatings.getRatings();
 
         return ratings.stream()
                 .map(rating -> {
-                    Movie movie = restTemplate.getForObject("http://localhost:8081/movies/" + rating.getMovieId(), Movie.class);
+                    Movie movie = movieInfoClient.getMovieInfo(rating.getMovieId());
+                    //comment
                     return new CatalogItem(movie.getName(), "desc", rating.getRating());
                 })
                 .collect(Collectors.toList());
